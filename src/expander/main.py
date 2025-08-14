@@ -44,7 +44,7 @@ def convert_to_docling_format(doc_path: Path) -> ConversionResult:
     """Convert the document to Docling format."""
     converter = DocumentConverter()
     result = converter.convert(doc_path)
-    result.document.save_as_html(doc_path.with_suffix(".docling.json"))
+    result.document.save_as_json(doc_path.with_suffix(".docling.json"))
     logger.info("Converted document to Docling format", path=doc_path)
 
     return result
