@@ -40,6 +40,20 @@ def get_example_document() -> Path:
     return doc_file
 
 
+def get_example_pdf_document() -> Path:
+    """Download the example PDF document."""
+    prepare_temp_storage()
+    pdf_file = Path(settings.temporary_storage_path) / "example_document.pdf"
+
+    if not pdf_file.exists():
+        resp = httpx.get(settings.example_pdf_url, timeout=30)
+        resp.raise_for_status()
+        pdf_file.write_bytes(resp.content)
+        logger.info("Downloaded example PDF document", url=settings.example_pdf_url)
+
+    return pdf_file
+
+
 def convert_to_docling_format(doc_path: Path) -> ConversionResult:
     """Convert the document to Docling format."""
     converter = DocumentConverter()
@@ -71,7 +85,7 @@ def main() -> None:
         for x in chunks
         if "On your host system, start an AI Inference Server" in x.text
     )
-    print(chunk_to_expand)
+    # print(chunk_to_expand)
 
     # Find the parent of the list item, which should be the list group.
     parent_ref = chunk_to_expand.meta.doc_items[0].parent
@@ -86,11 +100,14 @@ def main() -> None:
         else:
             break
 
-    # Serialize the parent item to Markdown format.
+    # Set up the serializer.
     serializer = MarkdownDocSerializer(doc=docling_doc.document)
-    ser_res = serializer.serialize(item=parent_item)
-    print(ser_res)
-    print(ser_res.text)
+
+    # Serialize all of the children.
+    # Bug with code/pre blocks in list items: https://github.com/docling-project/docling/issues/2103
+    parts = serializer.get_parts(item=parent_item)
+    text = "\n-----\n".join([part.text for part in parts])
+    print(text)
 
 
 if __name__ == "__main__":
